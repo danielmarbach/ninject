@@ -50,12 +50,12 @@ namespace Ninject
         }
 
         /// <summary>
-        /// Gets or sets the path that should be searched for extensions.
+        /// Gets or sets the paths that should be searched for extensions.
         /// </summary>
-        public string ExtensionSearchPattern
+        public string[] ExtensionSearchPatterns
         {
-            get { return Get("ExtensionSearchPattern", "Ninject.Extensions.*.dll"); }
-            set { Set("ExtensionSearchPattern", value); }
+            get { return Get("ExtensionSearchPatterns", new [] { "Ninject.Extensions.*.dll", "Ninject.Web*.dll" }); }
+            set { Set("ExtensionSearchPatterns", value); }
         }
         #endif //!NO_ASSEMBLY_SCANNING
 
@@ -113,7 +113,7 @@ namespace Ninject
 
         /// <summary>
         /// Gets or sets a value indicating whether Null is a valid value for injection.
-        /// By defualt this is disabled and whenever a provider returns null an eception is thrown.
+        /// By default this is disabled and whenever a provider returns null an exception is thrown.
         /// </summary>
         /// <value>
         /// 	<c>true</c> if null is allowed as injected value otherwise false.
@@ -133,7 +133,8 @@ namespace Ninject
         /// <returns>The value, or the default value if none was found.</returns>
         public T Get<T>(string key, T defaultValue)
         {
-            return _values.ContainsKey(key) ? (T)_values[key] : defaultValue;
+            object value;
+            return _values.TryGetValue(key, out value) ? (T)value : defaultValue;
         }
 
         /// <summary>

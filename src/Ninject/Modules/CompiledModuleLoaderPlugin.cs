@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Security.Policy;
+
 using Ninject.Components;
 using Ninject.Infrastructure;
 using Ninject.Infrastructure.Language;
@@ -62,28 +62,46 @@ namespace Ninject.Modules
 
         private static IEnumerable<AssemblyName> FindAssembliesWithModules(IEnumerable<string> filenames)
         {
-            AppDomain temporaryDomain = CreateTemporaryAppDomain();
-
-            foreach (string file in filenames)
+            var moduleCheckerType = typeof(ModuleChecker);
+            var temporaryDomain = CreateTemporaryAppDomain();
+            try
             {
-                Assembly assembly;
+                var checker = (ModuleChecker)temporaryDomain.CreateInstanceAndUnwrap(
+                    moduleCheckerType.Assembly.FullName, moduleCheckerType.FullName ?? String.Empty);
 
-                try
-                {
-                    var name = new AssemblyName { CodeBase = file };
-                    assembly = temporaryDomain.Load(name);
-                }
-                catch (BadImageFormatException)
-                {
-                    // Ignore native assemblies
-                    continue;
-                }
-
-                if (assembly.HasNinjectModules())
-                    yield return assembly.GetName();
+                return checker.CheckModules(filenames.ToArray());
             }
+            finally
+            {
+                AppDomain.Unload(temporaryDomain);
+            }
+        }
 
-            AppDomain.Unload(temporaryDomain);
+        private class ModuleChecker : MarshalByRefObject
+        {
+            public IEnumerable<AssemblyName> CheckModules(IEnumerable<string> filenames)
+            {
+                var result = new List<AssemblyName>();
+                foreach(var filename in filenames)
+                {
+                    Assembly assembly;
+                    try
+                    {
+                        assembly = Assembly.LoadFrom(filename);
+                    }
+                    catch (BadImageFormatException)
+                    {
+                        // Ignore native assemblies
+                        continue;
+                    }
+                    if (assembly.HasNinjectModules())
+                    {
+                        result.Add(assembly.GetName(false));
+                    }
+                }
+
+                return result;
+            }
         }
 
         private static AppDomain CreateTemporaryAppDomain()

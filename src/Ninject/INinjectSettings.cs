@@ -35,9 +35,9 @@ namespace Ninject
         bool LoadExtensions { get; }
 
         /// <summary>
-        /// Gets the path that should be searched for extensions.
+        /// Gets the paths that should be searched for extensions.
         /// </summary>
-        string ExtensionSearchPattern { get; }
+        string[] ExtensionSearchPatterns { get; }
         #endif //!NO_ASSEMBLY_SCANNING
 
         #if !NO_LCG
@@ -78,7 +78,7 @@ namespace Ninject
 
         /// <summary>
         /// Gets or sets a value indicating whether Null is a valid value for injection.
-        /// By defualt this is disabled and whenever a provider returns null an eception is thrown.
+        /// By defuault this is disabled and whenever a provider returns null an exception is thrown.
         /// </summary>
         /// <value><c>true</c> if null is allowed as injected value otherwise false.</value>
         bool AllowNullInjection { get; set; }

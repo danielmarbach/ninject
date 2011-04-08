@@ -145,6 +145,7 @@ namespace Ninject.Planning.Bindings
         {
             Binding.ProviderCallback = ctx => new ConstantProvider<T>(value);
             Binding.Target = BindingTarget.Constant;
+            Binding.ScopeCallback = StandardScopeCallbacks.Singleton;
 
             return this;
         }
@@ -305,18 +306,6 @@ namespace Ninject.Planning.Bindings
             Binding.ScopeCallback = StandardScopeCallbacks.Thread;
             return this;
         }
-
-        #if !NO_WEB
-        /// <summary>
-        /// Indicates that instances activated via the binding should be re-used within the same
-        /// HTTP request.
-        /// </summary>
-        public IBindingNamedWithOrOnSyntax<T> InRequestScope()
-        {
-            Binding.ScopeCallback = StandardScopeCallbacks.Request;
-            return this;
-        }
-        #endif
 
         /// <summary>
         /// Indicates that instances activated via the binding should be re-used as long as the object

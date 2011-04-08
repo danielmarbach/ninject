@@ -88,16 +88,17 @@ namespace Ninject
 
             this.AddComponents();
 
-#if !NO_WEB
-            OnePerRequestModule.StartManaging(this);
-#endif
+            GlobalKernelRegistry.StartManaging(this);
 
 #if !NO_ASSEMBLY_SCANNING
             if (this.Settings.LoadExtensions)
             {
-                this.Load(new[] { this.Settings.ExtensionSearchPattern });
+                this.Load(this.Settings.ExtensionSearchPatterns);
             }
 #endif
+
+            this.Bind<IKernel>().ToConstant(this).InTransientScope();
+            this.Bind<IResolutionRoot>().ToConstant(this).InTransientScope();
 
             this.Load(modules);
         }
@@ -119,9 +120,7 @@ namespace Ninject
         {
             if (disposing && !IsDisposed)
             {
-#if !NO_WEB
-                OnePerRequestModule.StopManaging(this);
-#endif
+                GlobalKernelRegistry.StopManaging(this);
 
                 if (this.Components != null)
                 {
@@ -330,26 +329,19 @@ namespace Ninject
         {
             Ensure.ArgumentNotNull(request, "request");
 
-            if (request.Service == typeof(IKernel))
+            var bindingPrecedenceComparer = this.GetBindingPrecedenceComparer();
+            var resolveBindings = Enumerable.Empty<IBinding>();
+
+            if (this.CanResolve(request) || this.HandleMissingBinding(request))
             {
-                return new[] { this };
+                resolveBindings = this.GetBindings(request.Service)
+                                      .Where(this.SatifiesRequest(request))
+                                      .OrderByDescending(b => b, bindingPrecedenceComparer)
+                                      .ToList();
+
             }
 
-            if (!this.CanResolve(request) && !this.HandleMissingBinding(request))
-            {
-                if (request.IsOptional)
-                {
-                    return Enumerable.Empty<object>();
-                }
-
-                throw new ActivationException(ExceptionFormatter.CouldNotResolveBinding(request));
-            }
-
-            IComparer<IBinding> bindingPrecedenceComparer = this.GetBindingPrecedenceComparer();
-            IEnumerable<IBinding> bindings =
-                this.GetBindings(request.Service).Where(this.SatifiesRequest(request)).OrderByDescending(b => b, bindingPrecedenceComparer).ToList();
-
-            if (!bindings.Any())
+            if (!resolveBindings.Any())
             {
                 if (request.IsOptional)
                 {
@@ -359,10 +351,10 @@ namespace Ninject
                 throw new ActivationException(ExceptionFormatter.CouldNotResolveBinding(request));
             }
 
-            var model = bindings.First();
-            bindings = bindings.TakeWhile(binding => bindingPrecedenceComparer.Compare(binding, model) == 0);
+            var model = resolveBindings.First();
+            resolveBindings = resolveBindings.TakeWhile(binding => bindingPrecedenceComparer.Compare(binding, model) == 0);
 
-            if (request.IsUnique && bindings.Count() > 1)
+            if (request.IsUnique && resolveBindings.Count() > 1)
             {
                 if (request.IsOptional)
                 {
@@ -372,7 +364,7 @@ namespace Ninject
                 throw new ActivationException(ExceptionFormatter.CouldNotUniquelyResolveBinding(request));
             }
 
-            return bindings.Select(binding => this.CreateContext(request, binding)).Select(context => context.Resolve());
+            return resolveBindings.Select(binding => this.CreateContext(request, binding).Resolve());
         }
 
         /// <summary>

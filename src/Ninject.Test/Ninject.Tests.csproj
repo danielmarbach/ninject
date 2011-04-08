@@ -32,9 +32,11 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -64,21 +66,15 @@
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Moq, Version=3.1.416.3, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
+    <Reference Include="Moq, Version=4.0.10827.0, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\tools\moq\net-3.5\Moq.dll</HintPath>
+      <HintPath>..\..\tools\moq\NET40\Moq.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data" />
-    <Reference Include="System.Web" />
-    <Reference Include="System.Web.Abstractions, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\lib\System.Web.Abstractions.dll</HintPath>
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
     <Reference Include="System.Xml" />
     <Reference Include="UnitDrivenNet">
       <HintPath>..\..\tools\unitdriven\UnitDrivenNet.dll</HintPath>
@@ -93,6 +89,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Fakes\Shield.cs" />
+    <Compile Include="Integration\ConstantTests.cs" />
+    <Compile Include="Fakes\ResolveCountingProvider.cs" />
+    <Compile Include="Integration\DefaultParameterTests.cs" />
     <Compile Include="Integration\EnumerableDependenciesTests\ConstrainedDependenciesContext.cs" />
     <Compile Include="Integration\EnumerableDependenciesTests\Fakes\ChildB.cs" />
     <Compile Include="Integration\EnumerableDependenciesTests\Fakes\ChildA.cs" />
@@ -114,6 +114,7 @@
     <Compile Include="Integration\EnumerableDependenciesTests\WhenServiceRequestsUnconstrainedArrayOfDependencies.cs" />
     <Compile Include="Integration\EnumerableDependenciesTests\WhenServiceRequestsUnconstrainedEnumerableOfDependencies.cs" />
     <Compile Include="Integration\EnumerableDependenciesTests\WhenServiceRequestsUnconstrainedListOfDependencies.cs" />
+    <Compile Include="Fakes\KiteShield.cs" />
     <Compile Include="Integration\ModuleLoadingTests\ModuleLoadingContext.cs" />
     <Compile Include="Integration\ModuleLoadingTests\Fakes\TestModule.cs" />
     <Compile Include="Integration\ModuleLoadingTests\Fakes\TestModule2.cs" />
@@ -136,7 +137,6 @@
     <Compile Include="Integration\InjectOnPropertyWithMoreRestrictiveSetter.cs" />
     <Compile Include="Integration\NamedPropertyInjectionTests.cs" />
     <Compile Include="Integration\PropertyInjectionTests.cs" />
-    <Compile Include="Integration\RequestScopeTests.cs" />
     <Compile Include="Integration\ExternalInjectionTests.cs" />
     <Compile Include="Fakes\NotifiesWhenDisposed.cs" />
     <Compile Include="ExtensionsForIEnumerable.cs" />
@@ -191,11 +191,14 @@
       <Project>{ADF369E2-6B9E-4D56-9B82-D273AE41EC2D}</Project>
       <Name>Ninject</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="TestModules\Ninject.Tests.TestModule.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <ProjectReference Include="..\TestAssembly\TestAssembly.csproj">
+      <Project>{C9F6CFE7-44B2-4D55-9307-33C34C045468}</Project>
+      <Name>TestAssembly</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TestModules\TestModules.csproj">
+      <Project>{90F46524-0716-4180-8A5F-1CD1EB5686F6}</Project>
+      <Name>TestModules</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
