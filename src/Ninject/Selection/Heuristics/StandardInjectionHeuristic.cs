@@ -28,7 +28,7 @@ namespace Ninject.Selection.Heuristics
         /// </summary>
         /// <param name="member">The member in question.</param>
         /// <returns><c>True</c> if the member should be injected; otherwise <c>false</c>.</returns>
-        public bool ShouldInject(MemberInfo member)
+        public virtual bool ShouldInject(MemberInfo member)
         {
             Ensure.ArgumentNotNull(member, "member");
 
@@ -36,11 +36,11 @@ namespace Ninject.Selection.Heuristics
 
             if (propertyInfo != null)
             {
-                #if !SILVERLIGHT
+#if !SILVERLIGHT
                 bool injectNonPublic = Settings.InjectNonPublic;
-                #else
+#else
                 const bool injectNonPublic = false;
-                #endif // !SILVERLIGHT
+#endif // !SILVERLIGHT
 
                 var setMethod = propertyInfo.GetSetMethod(injectNonPublic);
 

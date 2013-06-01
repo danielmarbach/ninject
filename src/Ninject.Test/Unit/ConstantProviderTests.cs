@@ -1,26 +1,13 @@
-﻿namespace Ninject.Tests.Unit.ConstantProviderTests
+﻿#if !NO_MOQ
+namespace Ninject.Tests.Unit.ConstantProviderTests
 {
-    using System;
+    using FluentAssertions;
     using Moq;
     using Ninject.Activation;
     using Ninject.Activation.Providers;
     using Ninject.Tests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
-    
+
     public class ConstantProviderContext
     {
         protected ConstantProvider<Sword> provider;
@@ -31,14 +18,12 @@
             this.SetUp();
         }
 
-        [TestInitialize]
         public void SetUp()
         {
             this.contextMock = new Mock<IContext>();
         }
     }
 
-    [TestClass]
     public class WhenCreateIsCalled : ConstantProviderContext
     {
         [Fact]
@@ -49,7 +34,8 @@
 
             var result = provider.Create(contextMock.Object);
 
-            result.ShouldBeSameAs(sword);
+            result.Should().BeSameAs(sword);
         }
     }
 }
+#endif

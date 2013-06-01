@@ -1,22 +1,9 @@
 ﻿namespace Ninject.Tests.Integration
 {
-    using System;
+    using FluentAssertions;
     using Ninject.Infrastructure.Disposal;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
+    using Attribute = System.Attribute;
 
     public class WeakAttribute : Attribute
     {
@@ -33,38 +20,26 @@
 
     public class UnknownAttack : IAttackAbility
     {
-        #region IAttackAbility Members
-
         public int Strength
         {
             get { return -1; }
         }
-
-        #endregion
     }
 
     public class WeakAttack : IAttackAbility
     {
-        #region IAttackAbility Members
-
         public int Strength
         {
             get { return 1; }
         }
-
-        #endregion
     }
 
     public class StrongAttack : IAttackAbility
     {
-        #region IAttackAbility Members
-
         public int Strength
         {
             get { return 10; }
         }
-
-        #endregion
     }
 
     public interface IVarialbeWeapon
@@ -77,8 +52,6 @@
 
     public class Hammer : IVarialbeWeapon
     {
-        #region IWeapon Members
-
         [Inject]
         [Weak]
         public IAttackAbility WeakAttack { get; set; }
@@ -94,22 +67,13 @@
         {
             get { return "hammer"; }
         }
-
-        #endregion
     }
 
-    [TestClass]
     public class ConditionalAttributeBindingTests : DisposableObject
     {
         protected IKernel kernel;
 
         public ConditionalAttributeBindingTests()
-        {
-            this.SetUp();
-        }
-
-        [TestInitialize]
-        public void SetUp()
         {
             this.kernel = new StandardKernel();
             this.kernel.Bind<IVarialbeWeapon>().To<Hammer>();
@@ -122,17 +86,17 @@
         public void DefaultInstanceIsResolvedWhenNoAttributesMatch()
         {
             var attackAbility = this.kernel.Get<IAttackAbility>();
-            attackAbility.ShouldBeInstanceOf<UnknownAttack>();
+            attackAbility.Should().BeOfType<UnknownAttack>();
         }
 
         [Fact]
         public void PropertiesAreInjectMatchingAttributeBindings()
         {
             var hammer = this.kernel.Get<IVarialbeWeapon>();
-            hammer.ShouldNotBeNull();
-            hammer.StrongAttack.ShouldBeInstanceOf<StrongAttack>();
-            hammer.WeakAttack.ShouldBeInstanceOf<WeakAttack>();
-            hammer.WtfAttack.ShouldBeInstanceOf<UnknownAttack>();
+            hammer.Should().NotBeNull();
+            hammer.StrongAttack.Should().BeOfType<StrongAttack>();
+            hammer.WeakAttack.Should().BeOfType<WeakAttack>();
+            hammer.WtfAttack.Should().BeOfType<UnknownAttack>();
         }
 
         public override void Dispose( bool disposing )

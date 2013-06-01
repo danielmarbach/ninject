@@ -1,28 +1,14 @@
-﻿namespace Ninject.Tests.Unit.ComponentContainerTests
+﻿#if !NO_MOQ
+namespace Ninject.Tests.Unit.ComponentContainerTests
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using FluentAssertions;
     using Moq;
     using Ninject.Components;
     using Ninject.Infrastructure.Disposal;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Assert = AssertWithThrows;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Assert = AssertWithThrows;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
     public class ComponentContainerContext
     {
@@ -34,7 +20,6 @@
             this.SetUp();
         }
 
-        [TestInitialize]
         public void SetUp()
         {
             this.container = new ComponentContainer();
@@ -44,7 +29,6 @@
         }
     }
 
-    [TestClass]
     public class WhenGetIsCalled : ComponentContainerContext
     {
         [Fact]
@@ -60,8 +44,8 @@
 
             var service = container.Get<ITestService>();
 
-            service.ShouldNotBeNull();
-            service.ShouldBeInstanceOf<TestServiceA>();
+            service.Should().NotBeNull();
+            service.Should().BeOfType<TestServiceA>();
         }
 
         [Fact]
@@ -72,8 +56,8 @@
 
             var service = container.Get<ITestService>();
 
-            service.ShouldNotBeNull();
-            service.ShouldBeInstanceOf<TestServiceA>();
+            service.Should().NotBeNull();
+            service.Should().BeOfType<TestServiceA>();
         }
 
         [Fact]
@@ -85,13 +69,34 @@
 
             var asks = container.Get<IAsksForEnumerable>();
 
-            asks.ShouldNotBeNull();
-            asks.SecondService.ShouldNotBeNull();
-            asks.SecondService.ShouldBeInstanceOf<TestServiceB>();
+            asks.Should().NotBeNull();
+            asks.SecondService.Should().NotBeNull();
+            asks.SecondService.Should().BeOfType<TestServiceB>();
+        }
+
+        [Fact]
+        public void SameInstanceIsReturnedByDefault()
+        {
+            container.Add<ITestService, TestServiceA>();
+
+            var service1 = container.Get<ITestService>();
+            var service2 = container.Get<ITestService>();
+
+            service1.Should().BeSameAs(service2);
+        }
+
+        [Fact]
+        public void DifferentInstanceAreReturnedForTransients()
+        {
+            container.AddTransient<ITestService, TestServiceA>();
+
+            var service1 = container.Get<ITestService>();
+            var service2 = container.Get<ITestService>();
+
+            service1.Should().NotBeSameAs(service2);
         }
     }
 
-    [TestClass]
     public class WhenGetAllIsCalledOnComponentContainer : ComponentContainerContext
     {
         [Fact]
@@ -101,9 +106,9 @@
 
             var services = container.GetAll<ITestService>().ToList();
 
-            services.ShouldNotBeNull();
-            services.Count.ShouldBe(1);
-            services[0].ShouldBeInstanceOf<TestServiceA>();
+            services.Should().NotBeNull();
+            services.Count.Should().Be(1);
+            services[0].Should().BeOfType<TestServiceA>();
         }
 
         [Fact]
@@ -113,10 +118,10 @@
             container.Add<ITestService, TestServiceB>();
             var services = container.GetAll<ITestService>().ToList();
 
-            services.ShouldNotBeNull();
-            services.Count.ShouldBe(2);
-            services[0].ShouldBeInstanceOf<TestServiceA>();
-            services[1].ShouldBeInstanceOf<TestServiceB>();
+            services.Should().NotBeNull();
+            services.Count.Should().Be(2);
+            services[0].Should().BeOfType<TestServiceA>();
+            services[1].Should().BeOfType<TestServiceB>();
         }
 
         [Fact]
@@ -127,13 +132,12 @@
             var service1 = container.Get<ITestService>();
             var service2 = container.Get<ITestService>();
 
-            service1.ShouldNotBeNull();
-            service2.ShouldNotBeNull();
-            service1.ShouldBeSameAs(service2);
+            service1.Should().NotBeNull();
+            service2.Should().NotBeNull();
+            service1.Should().BeSameAs(service2);
         }
     }
 
-    [TestClass]
     public class WhenRemoveAllIsCalled : ComponentContainerContext
     {
         [Fact]
@@ -142,7 +146,7 @@
             container.Add<ITestService, TestServiceA>();
 
             var service1 = container.Get<ITestService>();
-            service1.ShouldNotBeNull();
+            service1.Should().NotBeNull();
 
             container.RemoveAll<ITestService>();
             Assert.Throws<InvalidOperationException>(() => container.Get<ITestService>());
@@ -155,17 +159,17 @@
             container.Add<ITestService, TestServiceB>();
 
             var services = container.GetAll<ITestService>().ToList();
-            services.ShouldNotBeNull();
-            services.Count.ShouldBe(2);
+            services.Should().NotBeNull();
+            services.Count.Should().Be(2);
 
             container.RemoveAll<ITestService>();
 
-            services[0].IsDisposed.ShouldBeTrue();
-            services[1].IsDisposed.ShouldBeTrue();
+            services[0].IsDisposed.Should().BeTrue();
+            services[1].IsDisposed.Should().BeTrue();
         }
     }
 
-    internal class AsksForEnumerable : NinjectComponent, IAsksForEnumerable
+    public class AsksForEnumerable : NinjectComponent, IAsksForEnumerable
     {
         public ITestService SecondService { get; set; }
 
@@ -175,13 +179,14 @@
         }
     }
 
-    internal interface IAsksForEnumerable : INinjectComponent
+    public interface IAsksForEnumerable : INinjectComponent
     {
         ITestService SecondService { get; set; }
     }
 
-    internal class TestServiceA : NinjectComponent, ITestService { }
-    internal class TestServiceB : NinjectComponent, ITestService { }
+    public class TestServiceA : NinjectComponent, ITestService { }
+    public class TestServiceB : NinjectComponent, ITestService { }
 
-    internal interface ITestService : INinjectComponent, IDisposableObject { }
+    public interface ITestService : INinjectComponent, IDisposableObject { }
 }
+#endif

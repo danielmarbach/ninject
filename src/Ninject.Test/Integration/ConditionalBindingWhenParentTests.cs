@@ -1,41 +1,28 @@
 ﻿namespace Ninject.Tests.Integration
 {
-    using Ninject.Tests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
-    using Xunit;
-    using Xunit.Should;
-#endif
+    using System;
 
-    public class WhenParentContext
+    using FluentAssertions;
+    using Ninject.Tests.Fakes;
+    using Xunit;
+
+    public class WhenParentContext : IDisposable
     {
         protected StandardKernel kernel;
 
         public WhenParentContext()
         {
-            this.SetUp();
-        }
-
-        [TestInitialize]
-        public void SetUp()
-        {
             this.kernel = new StandardKernel();
             this.kernel.Bind<Sword>().ToSelf().Named("Broken");
             this.kernel.Bind<Sword>().ToSelf().WhenParentNamed("Something");
         }
+
+        public void Dispose()
+        {
+            this.kernel = new StandardKernel();
+        }
     }
 
-    [TestClass]
     public class WhenParentNamed : WhenParentContext
     {
         [Fact]
@@ -43,8 +30,8 @@
         {
             var instance = kernel.Get<Sword>("Broken");
 
-            instance.ShouldNotBeNull();
-            instance.ShouldBeInstanceOf(typeof(Sword));
+            instance.Should().NotBeNull();
+            instance.Should().BeOfType<Sword>();
         }
     }
 }

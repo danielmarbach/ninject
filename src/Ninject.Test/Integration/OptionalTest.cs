@@ -1,38 +1,23 @@
 namespace Ninject.Tests.Integration
 {
-    using Ninject.Tests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Assert = AssertWithThrows;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Assert = AssertWithThrows;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
-    using Xunit;
-    using Xunit.Should;
-#endif
+    using System;
 
-    [TestClass]
-    public class OptionalTest
+    using FluentAssertions;
+    using Ninject.Tests.Fakes;
+    using Xunit;
+
+    public class OptionalTest : IDisposable
     {
-        private StandardKernel kernel;
+        private readonly StandardKernel kernel;
 
         public OptionalTest()
         {
-            this.SetUp();
+            this.kernel = new StandardKernel();
         }
 
-        [TestInitialize]
-        public void SetUp()
+        public void Dispose()
         {
-            this.kernel = new StandardKernel();
+            this.kernel.Dispose();
         }
 
         [Fact]
@@ -40,8 +25,8 @@ namespace Ninject.Tests.Integration
         {
             var testClass = this.kernel.Get<OptionalConstructorArgumentTestClass>();
 
-            testClass.ShouldNotBeNull();
-            testClass.Warrior.ShouldBeNull();
+            testClass.Should().NotBeNull();
+            testClass.Warrior.Should().BeNull();
         }
 
         [Fact]
@@ -49,8 +34,8 @@ namespace Ninject.Tests.Integration
         {
             var testClass = this.kernel.Get<OptionalMethodArgumentTestClass>();
 
-            testClass.ShouldNotBeNull();
-            testClass.Warrior.ShouldBeNull();
+            testClass.Should().NotBeNull();
+            testClass.Warrior.Should().BeNull();
         }
 
         [Fact]
@@ -58,8 +43,8 @@ namespace Ninject.Tests.Integration
         {
             var testClass = this.kernel.Get<OptionalMethodArgumentTestClass>();
 
-            testClass.ShouldNotBeNull();
-            testClass.Warrior.ShouldBeNull();
+            testClass.Should().NotBeNull();
+            testClass.Warrior.Should().BeNull();
         }
 
         public class OptionalConstructorArgumentTestClass

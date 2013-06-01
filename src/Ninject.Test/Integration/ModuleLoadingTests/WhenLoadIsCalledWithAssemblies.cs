@@ -3,31 +3,23 @@ namespace Ninject.Tests.Integration.ModuleLoadingTests
 {
     using System.Linq;
     using System.Reflection;
-    using Ninject.Modules;
+    using FluentAssertions;
     using Ninject.Tests.Integration.ModuleLoadingTests.Fakes;
     using Xunit;
-    using Xunit.Should;
 
     public class WhenLoadIsCalledWithAssemblies : ModuleLoadingContext
     {
         [Fact]
         public void ModulesContainedInAssembliesAreLoaded()
         {
-            Assembly assembly = Assembly.GetExecutingAssembly();
+            var expectedModules = new[] { typeof(TestModule), typeof(TestModule2), typeof(OtherFakes.TestModule) };
+            var assembly = Assembly.GetExecutingAssembly();
+            
             this.Kernel.Load(assembly);
-
             var modules = this.Kernel.GetModules().ToArray();
 
-            INinjectModule testModule = modules.SingleOrDefault(module => module.GetType() == typeof(TestModule));
-            INinjectModule testModule2 = modules.SingleOrDefault(module => module.GetType() == typeof(TestModule2));
-            INinjectModule testModule3 = modules.SingleOrDefault(module => module.GetType() == typeof(OtherFakes.TestModule));
-
-            testModule.ShouldNotBeNull();
-            testModule2.ShouldNotBeNull();
-            testModule3.ShouldNotBeNull();
-            testModule.Kernel.ShouldBe(this.Kernel);
-            testModule2.Kernel.ShouldBe(this.Kernel);
-            testModule3.Kernel.ShouldBe(this.Kernel);
+            modules.Select(m => m.GetType()).Should().BeEquivalentTo(expectedModules);
+            modules.All(m => m.Kernel == this.Kernel).Should().BeTrue();
         }
     }
 }

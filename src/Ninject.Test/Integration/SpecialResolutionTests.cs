@@ -1,41 +1,26 @@
 ﻿namespace Ninject.Tests.Integration.SpecialResolutionTests
 {
-    using Ninject.Syntax;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Assert = AssertWithThrows;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Assert = AssertWithThrows;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
-    using Xunit;
-    using Xunit.Should;
-#endif
+    using System;
 
-    public class SpecialResolutionContext
+    using FluentAssertions;
+    using Ninject.Syntax;
+    using Xunit;
+
+    public class SpecialResolutionContext : IDisposable
     {
         protected StandardKernel kernel;
 
         public SpecialResolutionContext()
         {
-            this.SetUp();
+            this.kernel = new StandardKernel();
         }
 
-        [TestInitialize]
-        public void SetUp()
+        public void Dispose()
         {
-            this.kernel = new StandardKernel();
+            this.kernel.Dispose();
         }
     }
 
-    [TestClass]
     public class WhenServiceRequestsKernel : SpecialResolutionContext
     {
         [Fact]
@@ -44,13 +29,12 @@
             kernel.Bind<RequestsKernel>().ToSelf();
             var instance = kernel.Get<RequestsKernel>();
 
-            instance.ShouldNotBeNull();
-            instance.Kernel.ShouldNotBeNull();
-            instance.Kernel.ShouldBeSameAs(kernel);
+            instance.Should().NotBeNull();
+            instance.Kernel.Should().NotBeNull();
+            instance.Kernel.Should().BeSameAs(kernel);
         }
     }
 
-    [TestClass]
     public class WhenServiceRequestsResolutionRoot : SpecialResolutionContext
     {
         [Fact]
@@ -59,13 +43,12 @@
             kernel.Bind<RequestsResolutionRoot>().ToSelf();
             var instance = kernel.Get<RequestsResolutionRoot>();
 
-            instance.ShouldNotBeNull();
-            instance.ResolutionRoot.ShouldNotBeNull();
-            instance.ResolutionRoot.ShouldBeSameAs(kernel);
+            instance.Should().NotBeNull();
+            instance.ResolutionRoot.Should().NotBeNull();
+            instance.ResolutionRoot.Should().BeSameAs(kernel);
         }
     }
 
-    [TestClass]
     public class WhenServiceRequestsString : SpecialResolutionContext
     {
         [Fact]

@@ -20,7 +20,7 @@ namespace Ninject.Syntax
     /// <summary>
     /// Provides a path to resolve instances.
     /// </summary>
-    public interface IResolutionRoot
+    public interface IResolutionRoot : IFluentSyntax
     {
         /// <summary>
         /// Determines whether the specified request can be resolved.
@@ -29,6 +29,16 @@ namespace Ninject.Syntax
         /// <returns><c>True</c> if the request can be resolved; otherwise, <c>false</c>.</returns>
         bool CanResolve(IRequest request);
 
+        /// <summary>
+        /// Determines whether the specified request can be resolved.
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <param name="ignoreImplicitBindings">if set to <c>true</c> implicit bindings are ignored.</param>
+        /// <returns>
+        ///     <c>True</c> if the request can be resolved; otherwise, <c>false</c>.
+        /// </returns>
+        bool CanResolve(IRequest request, bool ignoreImplicitBindings);
+        
         /// <summary>
         /// Resolves instances for the specified request. The instances are not actually resolved
         /// until a consumer iterates over the enumerator.

@@ -1,27 +1,13 @@
-﻿
-
+﻿#if !NO_MOQ
 namespace Ninject.Tests.Unit.BindingActionStrategyTests
 {
     using System;
+    using FluentAssertions;
     using Moq;
     using Ninject.Activation;
     using Ninject.Activation.Strategies;
     using Ninject.Planning.Bindings;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
     public class BindingActionStrategyContext
     {
@@ -31,19 +17,12 @@ namespace Ninject.Tests.Unit.BindingActionStrategyTests
 
         public BindingActionStrategyContext()
         {
-            this.SetUp();
-        }
-
-        [TestInitialize]
-        public void SetUp()
-        {
             this.contextMock = new Mock<IContext>();
             this.bindingMock = new Mock<IBinding>();
             this.strategy = new BindingActionStrategy();
         }
     }
 
-    [TestClass]
     public class WhenActivateIsCalled : BindingActionStrategyContext
     {
         [Fact]
@@ -60,12 +39,11 @@ namespace Ninject.Tests.Unit.BindingActionStrategyTests
             bindingMock.SetupGet(x => x.ActivationActions).Returns(actions);
             strategy.Activate(contextMock.Object, new InstanceReference());
 
-            action1WasCalled.ShouldBeTrue();
-            action2WasCalled.ShouldBeTrue();
+            action1WasCalled.Should().BeTrue();
+            action2WasCalled.Should().BeTrue();
         }
     }
 
-    [TestClass]
     public class WhenDeactivateIsCalled : BindingActionStrategyContext
     {
         [Fact]
@@ -82,8 +60,9 @@ namespace Ninject.Tests.Unit.BindingActionStrategyTests
             bindingMock.SetupGet(x => x.DeactivationActions).Returns(actions);
             strategy.Deactivate(contextMock.Object, new InstanceReference());
 
-            action1WasCalled.ShouldBeTrue();
-            action2WasCalled.ShouldBeTrue();
+            action1WasCalled.Should().BeTrue();
+            action2WasCalled.Should().BeTrue();
         }
     }
 }
+#endif

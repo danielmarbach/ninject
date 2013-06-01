@@ -1,4 +1,5 @@
-﻿#if !NO_ASSEMBLY_SCANNING
+﻿#if !NO_MOQ
+#if !NO_ASSEMBLY_SCANNING
 namespace Ninject.Tests.Unit.CompiledModuleLoaderPluginTests
 {
     using System;
@@ -6,22 +7,22 @@ namespace Ninject.Tests.Unit.CompiledModuleLoaderPluginTests
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using FluentAssertions;
     using Moq;
     using Ninject.Modules;
     using Xunit;
-    using Xunit.Should;
 
     public class CompiledModuleLoaderPluginContext
     {
         protected readonly CompiledModuleLoaderPlugin loaderPlugin;
         protected readonly Mock<IKernel> kernelMock;
-        protected readonly string moduleFilename = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"TestModules\Ninject.Tests.TestModule.dll");
-        protected readonly string assemblyFilename = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"TestModules\Ninject.Tests.TestAssembly.dll");
+        protected readonly string moduleFilename = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Ninject.Tests.TestModule.dll");
+        protected readonly string assemblyFilename = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"Ninject.Tests.TestAssembly.dll");
 
         public CompiledModuleLoaderPluginContext()
         {
             kernelMock = new Mock<IKernel>();
-            loaderPlugin = new CompiledModuleLoaderPlugin(kernelMock.Object);
+            loaderPlugin = new CompiledModuleLoaderPlugin(kernelMock.Object, new AssemblyNameRetriever());
         }
     }
 
@@ -37,9 +38,9 @@ namespace Ninject.Tests.Unit.CompiledModuleLoaderPluginTests
                       .Callback<IEnumerable<Assembly>>(m => actual = m);
 
             loaderPlugin.LoadModules(new[] { this.moduleFilename });
-            actual.ShouldNotBeNull();
-            actual.Count().ShouldBe(1);
-            actual.Where(a => a.GetName().Name == expected).ShouldNotBeEmpty();
+            actual.Should().NotBeNull();
+            actual.Count().Should().Be(1);
+            actual.Where(a => a.GetName().Name == expected).Should().NotBeEmpty();
         }
 
         [Fact]
@@ -51,3 +52,4 @@ namespace Ninject.Tests.Unit.CompiledModuleLoaderPluginTests
     }
 }
 #endif //!NO_ASSEMBLY_SCANNING
+#endif

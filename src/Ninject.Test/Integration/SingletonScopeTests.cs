@@ -1,42 +1,27 @@
 ﻿namespace Ninject.Tests.Integration.SingletonScopeTests
 {
     using System;
+    using FluentAssertions;
     using Ninject.Activation;
     using Ninject.Infrastructure.Disposal;
     using Ninject.Tests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
-    public class SingletonScopeContext
+    public class SingletonScopeContext : IDisposable
     {
         protected StandardKernel kernel;
 
         public SingletonScopeContext()
         {
-            this.SetUp();
+            this.kernel = new StandardKernel();
         }
 
-        [TestInitialize]
-        public void SetUp()
+        public void Dispose()
         {
-            this.kernel = new StandardKernel();
+            this.kernel.Dispose();
         }
     }
 
-    [TestClass]
     public class WhenServiceIsBoundToInterfaceInSingletonScope : SingletonScopeContext
     {
         [Fact]
@@ -47,7 +32,7 @@
             var instance1 = kernel.Get<IWeapon>();
             var instance2 = kernel.Get<IWeapon>();
 
-            instance1.ShouldBeSameAs(instance2);
+            instance1.Should().BeSameAs(instance2);
         }
 
         [Fact]
@@ -63,7 +48,7 @@
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            reference.IsAlive.ShouldBeTrue();
+            reference.IsAlive.Should().BeTrue();
         }
 
         [Fact]
@@ -74,11 +59,10 @@
             var instance = kernel.Get<INotifyWhenDisposed>();
             kernel.Dispose();
 
-            instance.IsDisposed.ShouldBeTrue();
+            instance.IsDisposed.Should().BeTrue();
         }
     }
 
-    [TestClass]
     public class WhenServiceIsBoundToSelfInSingletonScope : SingletonScopeContext
     {
         [Fact]
@@ -89,7 +73,7 @@
             var sword1 = kernel.Get<Sword>();
             var sword2 = kernel.Get<Sword>();
 
-            sword1.ShouldBeSameAs(sword2);
+            sword1.Should().BeSameAs(sword2);
         }
 
         [Fact]
@@ -105,7 +89,7 @@
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            reference.IsAlive.ShouldBeTrue();
+            reference.IsAlive.Should().BeTrue();
         }
 
         [Fact]
@@ -116,11 +100,10 @@
             var instance = kernel.Get<NotifiesWhenDisposed>();
             kernel.Dispose();
 
-            instance.IsDisposed.ShouldBeTrue();
+            instance.IsDisposed.Should().BeTrue();
         }
     }
 
-    [TestClass]
     public class WhenServiceIsBoundToProviderInSingletonScope : SingletonScopeContext
     {
         [Fact]
@@ -131,7 +114,7 @@
             var instance1 = kernel.Get<INotifyWhenDisposed>();
             var instance2 = kernel.Get<INotifyWhenDisposed>();
 
-            instance1.ShouldBeSameAs(instance2);
+            instance1.Should().BeSameAs(instance2);
         }
 
         [Fact]
@@ -147,7 +130,7 @@
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            reference.IsAlive.ShouldBeTrue();
+            reference.IsAlive.Should().BeTrue();
         }
 
         [Fact]
@@ -158,11 +141,10 @@
             var instance = kernel.Get<INotifyWhenDisposed>();
             kernel.Dispose();
 
-            instance.IsDisposed.ShouldBeTrue();
+            instance.IsDisposed.Should().BeTrue();
         }
     }
 
-    [TestClass]
     public class WhenServiceIsBoundToMethodInSingletonScope : SingletonScopeContext
     {
         [Fact]
@@ -173,7 +155,7 @@
             var instance1 = kernel.Get<INotifyWhenDisposed>();
             var instance2 = kernel.Get<INotifyWhenDisposed>();
 
-            instance1.ShouldBeSameAs(instance2);
+            instance1.Should().BeSameAs(instance2);
         }
 
         [Fact]
@@ -189,7 +171,7 @@
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            reference.IsAlive.ShouldBeTrue();
+            reference.IsAlive.Should().BeTrue();
         }
 
         [Fact]
@@ -200,7 +182,7 @@
             var instance = kernel.Get<INotifyWhenDisposed>();
             kernel.Dispose();
 
-            instance.IsDisposed.ShouldBeTrue();
+            instance.IsDisposed.Should().BeTrue();
         }
     }
 

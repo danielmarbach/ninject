@@ -1,7 +1,9 @@
+#if !NO_MOQ
 namespace Ninject.Tests.Unit.CacheTests
 {
     using System;
     using System.Collections.Generic;
+    using FluentAssertions;
     using Moq;
     using Ninject.Activation;
     using Ninject.Activation.Caching;
@@ -10,28 +12,12 @@ namespace Ninject.Tests.Unit.CacheTests
     using Ninject.Planning;
     using Ninject.Planning.Bindings;
     using Ninject.Tests.Fakes;
-
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
-    [TestClass]
     public class WhenPruneIsCalled
     {
         private Mock<ICachePruner> cachePrunerMock;
-        private Mock<IBinding> bindingMock;
+        private Mock<IBindingConfiguration> bindingConfigurationMock;
         private Cache cache;
 
         public WhenPruneIsCalled()
@@ -39,52 +25,55 @@ namespace Ninject.Tests.Unit.CacheTests
             this.SetUp();
         }
 
-        [TestInitialize]
         public void SetUp()
         {
             this.cachePrunerMock = new Mock<ICachePruner>();
-            this.bindingMock = new Mock<IBinding>();
+            this.bindingConfigurationMock = new Mock<IBindingConfiguration>();
             this.cache = new Cache(new PipelineMock(), this.cachePrunerMock.Object);
         }
 
+#if !MONO
         [Fact]
         public void CollectedScopeInstancesAreRemoved()
         {
             var sword = new Sword();
             var swordWeakReference = new WeakReference(sword);
-            var context = CreateContextMock(new object(), bindingMock.Object);
+            var context = CreateContextMock(new TestObject(42), this.bindingConfigurationMock.Object);
+            this.Remember(sword, context);
 
-            this.Execute(sword, context);
             sword = null;
             context = null;
             GC.Collect();
             cache.Prune();
+            
             GC.Collect();
             bool swordCollected = !swordWeakReference.IsAlive;
-
-            swordCollected.ShouldBeTrue();
+            swordCollected.Should().BeTrue();
         }
+#endif
 
         [Fact]
         public void UncollectedScopeInstancesAreNotRemoved()
         {
             var sword = new Sword();
             var swordWeakReference = new WeakReference(sword);
-            var context = CreateContextMock(new object(), bindingMock.Object);
+            var context = CreateContextMock(new TestObject(42), this.bindingConfigurationMock.Object);
 
-            this.Execute(sword, context);
+            this.Remember(sword, context);
             GC.Collect();
             bool swordCollected = !swordWeakReference.IsAlive;
 
-            swordCollected.ShouldBeFalse();
+            swordCollected.Should().BeFalse();
         }
 
-        private static IContext CreateContextMock(object scope, IBinding binding, params Type[] genericArguments)
+        private static IContext CreateContextMock(object scope, IBindingConfiguration bindingConfiguration, params Type[] genericArguments)
         {
-            return new ContextMock(scope, binding, genericArguments);
+            var bindingMock = new Mock<IBinding>();
+            bindingMock.Setup(b => b.BindingConfiguration).Returns(bindingConfiguration);
+            return new ContextMock(scope, bindingMock.Object, genericArguments);
         }
 
-        private void Execute(Sword sword, IContext context)
+        private void Remember(Sword sword, IContext context)
         {
             this.cache.Remember(context, new InstanceReference { Instance = sword });
         }
@@ -167,3 +156,4 @@ namespace Ninject.Tests.Unit.CacheTests
         }
     }
 }
+#endif

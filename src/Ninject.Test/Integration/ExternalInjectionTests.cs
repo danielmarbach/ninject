@@ -1,39 +1,26 @@
 ﻿namespace Ninject.Tests.Integration.ExternalInjectionTests
 {
-    using Ninject.Tests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
-    using Xunit;
-    using Xunit.Should;
-#endif
+    using System;
 
-    public class ExternalInjectionContext
+    using FluentAssertions;
+    using Ninject.Tests.Fakes;
+    using Xunit;
+
+    public class ExternalInjectionContext : IDisposable
     {
         protected StandardKernel kernel;
 
         public ExternalInjectionContext()
         {
-            this.SetUp();
+            this.kernel = new StandardKernel();
         }
 
-        [TestInitialize]
-        public void SetUp()
+        public void Dispose()
         {
-            this.kernel = new StandardKernel();
+            this.kernel.Dispose();
         }
     }
 
-    [TestClass]
     public class WhenInjectIsCalled : ExternalInjectionContext
     {
         [Fact]
@@ -44,8 +31,8 @@
             var warrior = new ExternalWarrior();
             kernel.Inject(warrior);
 
-            warrior.Weapon.ShouldNotBeNull();
-            warrior.Weapon.ShouldBeInstanceOf<Sword>();
+            warrior.Weapon.Should().NotBeNull();
+            warrior.Weapon.Should().BeOfType<Sword>();
         }
 
         [Fact]
@@ -56,7 +43,7 @@
             kernel.Inject(instance);
             kernel.Dispose();
 
-            instance.IsDisposed.ShouldBeFalse();
+            instance.IsDisposed.Should().BeFalse();
         }
     }
 

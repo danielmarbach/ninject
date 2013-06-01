@@ -1,29 +1,14 @@
-﻿#if !WINDOWS_PHONE
+﻿#if !NO_MOQ
+#if !NO_ASSEMBLY_SCANNING
 namespace Ninject.Tests.Integration.ModuleLoadingTests
 {
     using System;
-    using System.Linq;
+    using System.Text;
+    using FluentAssertions;
     using Moq;
     using Ninject.Tests.Integration.ModuleLoadingTests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-        using MsTest.Should;
-        using Microsoft.VisualStudio.TestTools.UnitTesting;
-        using Assert = AssertWithThrows;
-        using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-        using UnitDriven;
-        using UnitDriven.Should;
-        using Assert = AssertWithThrows;
-        using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
-    [TestClass]
     public class WhenLoadIsCalledWithModule : ModuleLoadingContext
     {
         [Fact]
@@ -42,8 +27,7 @@ namespace Ninject.Tests.Integration.ModuleLoadingTests
             this.Kernel.Load(module);
 
             moduleMock.Verify(x => x.OnLoad(this.Kernel), Times.Once());
-            this.Kernel.GetModules().ShouldContainSingle().ShouldBe(module);
-            this.Kernel.HasModule(module.Name).ShouldBeTrue();
+            this.Kernel.GetModules().Should().BeEquivalentTo(module);
         }
 
         [Fact]
@@ -56,8 +40,7 @@ namespace Ninject.Tests.Integration.ModuleLoadingTests
             this.Kernel.Unload(module.Name);
 
             moduleMock.Verify(x => x.OnUnload(this.Kernel), Times.Once());
-            this.Kernel.HasModule(module.Name).ShouldBeFalse();
-            this.Kernel.GetModules().Count().ShouldBe(0);
+            this.Kernel.GetModules().Should().BeEmpty();
         }
 
         [Fact]
@@ -65,7 +48,9 @@ namespace Ninject.Tests.Integration.ModuleLoadingTests
         {
             var module = this.CreateModule(null);
 
-            Assert.Throws<NotSupportedException>(() => this.Kernel.Load(module));
+            Action moduleLoadingAction = () => this.Kernel.Load(module);
+
+            moduleLoadingAction.ShouldThrow<NotSupportedException>();
         }
 
         [Fact]
@@ -73,7 +58,9 @@ namespace Ninject.Tests.Integration.ModuleLoadingTests
         {
             var module = this.CreateModule(string.Empty);
 
-            Assert.Throws<NotSupportedException>(() => this.Kernel.Load(module));
+            Action moduleLoadingAction = () => this.Kernel.Load(module);
+
+            moduleLoadingAction.ShouldThrow<NotSupportedException>();
         }
 
         [Fact]
@@ -84,7 +71,9 @@ namespace Ninject.Tests.Integration.ModuleLoadingTests
             var module2 = this.CreateModule(ModuleName);
 
             this.Kernel.Load(module1);
-            Assert.Throws<NotSupportedException>(() => this.Kernel.Load(module2));
+            Action moduleLoadingAction = () => this.Kernel.Load(module2);
+
+            moduleLoadingAction.ShouldThrow<NotSupportedException>();
         }
 
         [Fact]
@@ -98,14 +87,34 @@ namespace Ninject.Tests.Integration.ModuleLoadingTests
             this.Kernel.Unload(module1.Name);
             this.Kernel.Load(module2);
 
-            this.Kernel.GetModules().ShouldContainSingle().ShouldBe(module2);
+            this.Kernel.GetModules().Should().BeEquivalentTo(module2);
         }
 
         [Fact]
         public void UnloadNotLoadedModuleFails()
         {
-            Assert.Throws<NotSupportedException>(() => this.Kernel.Unload("NotLoadedModule"));
+            Action moduleUnloadingAction = () => this.Kernel.Unload("NotLoadedModule");
+
+            moduleUnloadingAction.ShouldThrow<NotSupportedException>();
+        }
+    
+        [Fact]
+        public void ModulesAreVerifiedAfterAllModulesAreLoaded()
+        {
+            var moduleMock1 = this.CreateModuleMock("SomeName1");
+            var moduleMock2 = this.CreateModuleMock("SomeName2");
+            var orderStringBuilder = new StringBuilder();
+
+            moduleMock1.Setup(m => m.OnLoad(this.Kernel)).Callback(() => orderStringBuilder.Append("LoadModule1 "));
+            moduleMock2.Setup(m => m.OnLoad(this.Kernel)).Callback(() => orderStringBuilder.Append("LoadModule2 "));
+            moduleMock1.Setup(m => m.OnVerifyRequiredModules()).Callback(() => orderStringBuilder.Append("VerifyModule "));
+            moduleMock2.Setup(m => m.OnVerifyRequiredModules()).Callback(() => orderStringBuilder.Append("VerifyModule "));
+
+            this.Kernel.Load(moduleMock1.Object, moduleMock2.Object);
+
+            orderStringBuilder.ToString().Should().Be("LoadModule1 LoadModule2 VerifyModule VerifyModule ");
         }
     }
 }
+#endif
 #endif

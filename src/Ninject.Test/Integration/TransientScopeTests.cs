@@ -1,44 +1,27 @@
 ﻿namespace Ninject.Tests.Integration.TransientScopeTests
 {
     using System;
+    using FluentAssertions;
     using Ninject.Activation;
     using Ninject.Activation.Caching;
     using Ninject.Tests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Assert = AssertWithThrows;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Assert = AssertWithThrows;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
-    public class TransientScopeContext
+    public class TransientScopeContext : IDisposable
     {
         protected StandardKernel kernel;
 
         public TransientScopeContext()
         {
-            this.SetUp();
+            this.kernel = new StandardKernel();            
         }
 
-        [TestInitialize]
-        public void SetUp()
+        public void Dispose()
         {
-            this.kernel = new StandardKernel();            
+            this.kernel.Dispose();
         }
     }
 
-    [TestClass]
     public class WhenServiceIsBoundToInterfaceInTransientScope : TransientScopeContext
     {
         [Fact]
@@ -49,9 +32,10 @@
             var instance1 = kernel.Get<IWeapon>();
             var instance2 = kernel.Get<IWeapon>();
 
-            instance1.ShouldNotBeSameAs(instance2);
+            instance1.Should().NotBeSameAs(instance2);
         }
 
+#if !MONO
         [Fact]
         public void InstancesAreGarbageCollectedIfAllExternalReferencesAreDropped()
         {
@@ -65,11 +49,11 @@
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            reference.IsAlive.ShouldBeFalse();
+            reference.IsAlive.Should().BeFalse();
         }
+#endif
     }
 
-    [TestClass]
     public class WhenServiceIsBoundToSelfInTransientScope : TransientScopeContext
     {
         [Fact]
@@ -80,9 +64,10 @@
             var sword1 = kernel.Get<Sword>();
             var sword2 = kernel.Get<Sword>();
 
-            sword1.ShouldNotBeSameAs(sword2);
+            sword1.Should().NotBeSameAs(sword2);
         }
 
+#if !MONO
         [Fact]
         public void InstancesAreGarbageCollectedIfAllExternalReferencesAreDropped()
         {
@@ -96,16 +81,16 @@
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            reference.IsAlive.ShouldBeFalse();
+            reference.IsAlive.Should().BeFalse();
 
             var cache = kernel.Components.Get<ICache>();
             cache.Prune();
 
-            cache.Count.ShouldBe(0);
+            cache.Count.Should().Be(0);
         }
+#endif
     }
 
-    [TestClass]
     public class WhenServiceIsBoundToProviderInTransientScope : TransientScopeContext
     {
         [Fact]
@@ -116,9 +101,10 @@
             var instance1 = kernel.Get<IWeapon>();
             var instance2 = kernel.Get<IWeapon>();
 
-            instance1.ShouldNotBeSameAs(instance2);
+            instance1.Should().NotBeSameAs(instance2);
         }
 
+#if !MONO
         [Fact]
         public void InstancesAreGarbageCollectedIfAllExternalReferencesAreDropped()
         {
@@ -132,11 +118,11 @@
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            reference.IsAlive.ShouldBeFalse();
+            reference.IsAlive.Should().BeFalse();
         }
+#endif
     }
 
-    [TestClass]
     public class WhenServiceIsBoundToMethodInTransientScope : TransientScopeContext
     {
         [Fact]
@@ -147,9 +133,10 @@
             var instance1 = kernel.Get<IWeapon>();
             var instance2 = kernel.Get<IWeapon>();
 
-            instance1.ShouldNotBeSameAs(instance2);
+            instance1.Should().NotBeSameAs(instance2);
         }
 
+#if !MONO
         [Fact]
         public void InstancesAreGarbageCollectedIfAllExternalReferencesAreDropped()
         {
@@ -163,8 +150,9 @@
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            reference.IsAlive.ShouldBeFalse();
+            reference.IsAlive.Should().BeFalse();
         }
+#endif
     }
 
     public class SwordProvider : Provider<Sword>

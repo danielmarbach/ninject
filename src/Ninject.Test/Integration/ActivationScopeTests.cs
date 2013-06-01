@@ -1,44 +1,28 @@
 ﻿namespace Ninject.Tests.Integration.ActivationBlockTests
 {
     using System;
-
+    using FluentAssertions;
     using Ninject.Activation.Blocks;
-    using Ninject.Tests.Fakes; 
-#if SILVERLIGHT
-    #if SILVERLIGHT_MSTEST
-        using MsTest.Should;
-        using Microsoft.VisualStudio.TestTools.UnitTesting;
-        using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-    #else
-        using UnitDriven;
-        using UnitDriven.Should;
-        using Fact = UnitDriven.TestMethodAttribute;
-    #endif
-#else
-    using Ninject.Tests.MSTestAttributes;
+    using Ninject.Tests.Fakes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
-    public class ActivationBlockContext
+    public class ActivationBlockContext : IDisposable
     {
         protected StandardKernel kernel;
         protected ActivationBlock block;
 
         public ActivationBlockContext()
         {
-            this.SetUp();
-        }
-
-        [TestInitialize]
-        public void SetUp()
-        {
             this.kernel = new StandardKernel();
             this.block = new ActivationBlock(kernel);
         }
+
+        public void Dispose()
+        {
+            this.kernel.Dispose();
+        }
     }
 
-    [TestClass]
     public class WhenBlockIsCreated : ActivationBlockContext
     {
         [Fact]
@@ -49,7 +33,7 @@
             var weapon1 = block.Get<IWeapon>();
             var weapon2 = block.Get<IWeapon>();
 
-            weapon1.ShouldBeSameAs(weapon2);
+            weapon1.Should().BeSameAs(weapon2);
         }
 
         [Fact]
@@ -60,7 +44,7 @@
             var weapon1 = block.Get<IWeapon>();
             var weapon2 = kernel.Get<IWeapon>();
 
-            weapon1.ShouldNotBeSameAs(weapon2);
+            weapon1.Should().NotBeSameAs(weapon2);
         }
 
         [Fact]
@@ -73,11 +57,10 @@
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
-            instance.IsDisposed.ShouldBeFalse();
+            instance.IsDisposed.Should().BeFalse();
         }
     }
 
-    [TestClass]
     public class WhenBlockIsDisposed : ActivationBlockContext
     {
         [Fact]
@@ -88,7 +71,7 @@
             var instance = block.Get<NotifiesWhenDisposed>();
             block.Dispose();
 
-            instance.IsDisposed.ShouldBeTrue();
+            instance.IsDisposed.Should().BeTrue();
         }
     }
 }

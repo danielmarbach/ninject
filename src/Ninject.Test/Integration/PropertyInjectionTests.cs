@@ -1,25 +1,11 @@
 namespace Ninject.Tests.Integration
 {
+    using FluentAssertions;
     using Ninject.Infrastructure.Disposal;
     using Ninject.Parameters;
     using Ninject.Tests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
-    [TestClass]
     public class WithPropertyValueTests : PropertyInjectionTests
     {
         [Fact]
@@ -55,7 +41,6 @@ namespace Ninject.Tests.Integration
 #endif //!SILVERLIGHT
     }
 
-    [TestClass]
     public class WithParameterTests : PropertyInjectionTests
     {
         [Fact]
@@ -114,11 +99,11 @@ namespace Ninject.Tests.Integration
             this.kernel.Settings.InjectParentPrivateProperties = true;
             var warrior = this.kernel.Get<OwnStyleNinja>();
 
-            warrior.ShouldNotBeNull();
-            warrior.OffHandWeapon.ShouldNotBeNull();
-            warrior.SecondaryWeapon.ShouldNotBeNull();
-            warrior.SecretWeaponAccessor.ShouldNotBeNull();
-            warrior.VerySecretWeaponAccessor.ShouldNotBeNull();
+            warrior.Should().NotBeNull();
+            warrior.OffHandWeapon.Should().NotBeNull();
+            warrior.SecondaryWeapon.Should().NotBeNull();
+            warrior.SecretWeaponAccessor.Should().NotBeNull();
+            warrior.VerySecretWeaponAccessor.Should().NotBeNull();
         }
 
         [Fact]
@@ -128,11 +113,11 @@ namespace Ninject.Tests.Integration
             this.kernel.Settings.InjectParentPrivateProperties = true;
             var warrior = this.kernel.Get<FatherStyleNinja>();
 
-            warrior.ShouldNotBeNull();
-            warrior.OffHandWeapon.ShouldNotBeNull();
-            warrior.SecondaryWeapon.ShouldNotBeNull();
-            warrior.SecretWeaponAccessor.ShouldNotBeNull();
-            warrior.VerySecretWeaponAccessor.ShouldNotBeNull();
+            warrior.Should().NotBeNull();
+            warrior.OffHandWeapon.Should().NotBeNull();
+            warrior.SecondaryWeapon.Should().NotBeNull();
+            warrior.SecretWeaponAccessor.Should().NotBeNull();
+            warrior.VerySecretWeaponAccessor.Should().NotBeNull();
         }
         
         private class OwnStyleNinja : Ninja
@@ -165,30 +150,24 @@ namespace Ninject.Tests.Integration
 
         public PropertyInjectionTests()
         {
-            this.SetUp();
-        }
-
-        [TestInitialize]
-        public void SetUp()
-        {
             this.kernel = new StandardKernel();
             this.kernel.Bind<IWeapon>().To<Shuriken>();
         }
 
         protected void ValidateWarrior(IWarrior warrior)
         {
-            warrior.ShouldBeInstanceOf<FootSoldier>();
-            warrior.Weapon.ShouldNotBeNull();
-            warrior.Weapon.ShouldBeInstanceOf<Shuriken>();
+            warrior.Should().BeOfType<FootSoldier>();
+            warrior.Weapon.Should().NotBeNull();
+            warrior.Weapon.Should().BeOfType<Shuriken>();
         }
 
         protected void ValidateNinjaWarriorWithOverides(IWarrior warrior)
         {
-            warrior.ShouldBeInstanceOf<Ninja>();
-            warrior.Weapon.ShouldBeInstanceOf<Shuriken>();
+            warrior.Should().BeOfType<Ninja>();
+            warrior.Weapon.Should().BeOfType<Shuriken>();
             Ninja ninja = warrior as Ninja;
-            ninja.SecondaryWeapon.ShouldBeInstanceOf<Sword>();
-            ninja.VerySecretWeaponAccessor.ShouldBeInstanceOf<Sword>();
+            ninja.SecondaryWeapon.Should().BeOfType<Sword>();
+            ninja.VerySecretWeaponAccessor.Should().BeOfType<Sword>();
         }
 
         public override void Dispose(bool disposing)

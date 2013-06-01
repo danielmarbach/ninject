@@ -88,7 +88,8 @@ namespace Ninject
 
             this.AddComponents();
 
-            GlobalKernelRegistry.StartManaging(this);
+            this.Bind<IKernel>().ToConstant(this).InTransientScope();
+            this.Bind<IResolutionRoot>().ToConstant(this).InTransientScope();
 
 #if !NO_ASSEMBLY_SCANNING
             if (this.Settings.LoadExtensions)
@@ -96,10 +97,6 @@ namespace Ninject
                 this.Load(this.Settings.ExtensionSearchPatterns);
             }
 #endif
-
-            this.Bind<IKernel>().ToConstant(this).InTransientScope();
-            this.Bind<IResolutionRoot>().ToConstant(this).InTransientScope();
-
             this.Load(modules);
         }
 
@@ -120,8 +117,6 @@ namespace Ninject
         {
             if (disposing && !IsDisposed)
             {
-                GlobalKernelRegistry.StopManaging(this);
-
                 if (this.Components != null)
                 {
                     // Deactivate all cached instances before shutting down the kernel.
@@ -199,18 +194,19 @@ namespace Ninject
         /// <summary>
         /// Loads the module(s) into the kernel.
         /// </summary>
-        /// <param name="modules">The modules to load.</param>
-        public void Load(IEnumerable<INinjectModule> modules)
+        /// <param name="m">The modules to load.</param>
+        public void Load(IEnumerable<INinjectModule> m)
         {
-            Ensure.ArgumentNotNull(modules, "modules");
+            Ensure.ArgumentNotNull(m, "modules");
 
-            foreach (INinjectModule module in modules)
+            m = m.ToList();
+            foreach (INinjectModule module in m)
             {
-				if (string.IsNullOrEmpty(module.Name))
-				{
-					throw new NotSupportedException(ExceptionFormatter.ModulesWithNullOrEmptyNamesAreNotSupported());
-				}
-				
+                if (string.IsNullOrEmpty(module.Name))
+                {
+                    throw new NotSupportedException(ExceptionFormatter.ModulesWithNullOrEmptyNamesAreNotSupported());
+                }
+                
                 INinjectModule existingModule;
 
                 if (this.modules.TryGetValue(module.Name, out existingModule))
@@ -221,6 +217,11 @@ namespace Ninject
                 module.OnLoad(this);
 
                 this.modules.Add(module.Name, module);
+            }
+
+            foreach (INinjectModule module in m)
+            {
+                module.OnVerifyRequiredModules();
             }
         }
 
@@ -241,10 +242,7 @@ namespace Ninject
         /// <param name="assemblies">The assemblies to search.</param>
         public void Load(IEnumerable<Assembly> assemblies)
         {
-            foreach (Assembly assembly in assemblies)
-            {
-                this.Load(assembly.GetNinjectModules());
-            }
+            this.Load(assemblies.SelectMany(asm => asm.GetNinjectModules()));
         }
 #endif //!NO_ASSEMBLY_SCANNING
 
@@ -287,10 +285,7 @@ namespace Ninject
             var request = this.CreateRequest(service, null, parameters, false, false);
             var context = this.CreateContext(request, binding);
 
-            lock (planner)
-            {
-                context.Plan = planner.GetPlan(service);
-            }
+            context.Plan = planner.GetPlan(service);
 
             var reference = new InstanceReference { Instance = instance };
             pipeline.Activate(context, reference);
@@ -320,6 +315,21 @@ namespace Ninject
         }
 
         /// <summary>
+        /// Determines whether the specified request can be resolved.
+        /// </summary>
+        /// <param name="request">The request.</param>
+        /// <param name="ignoreImplicitBindings">if set to <c>true</c> implicit bindings are ignored.</param>
+        /// <returns>
+        ///     <c>True</c> if the request can be resolved; otherwise, <c>false</c>.
+        /// </returns>
+        public virtual bool CanResolve(IRequest request, bool ignoreImplicitBindings)
+        {
+            Ensure.ArgumentNotNull(request, "request");
+            return this.GetBindings(request.Service)
+                .Any(binding => (!ignoreImplicitBindings || !binding.IsImplicit) && this.SatifiesRequest(request)(binding));
+        }
+
+        /// <summary>
         /// Resolves instances for the specified request. The instances are not actually resolved
         /// until a consumer iterates over the enumerator.
         /// </summary>
@@ -335,9 +345,7 @@ namespace Ninject
             if (this.CanResolve(request) || this.HandleMissingBinding(request))
             {
                 resolveBindings = this.GetBindings(request.Service)
-                                      .Where(this.SatifiesRequest(request))
-                                      .OrderByDescending(b => b, bindingPrecedenceComparer)
-                                      .ToList();
+                                      .Where(this.SatifiesRequest(request));
 
             }
 
@@ -351,20 +359,35 @@ namespace Ninject
                 throw new ActivationException(ExceptionFormatter.CouldNotResolveBinding(request));
             }
 
-            var model = resolveBindings.First();
-            resolveBindings = resolveBindings.TakeWhile(binding => bindingPrecedenceComparer.Compare(binding, model) == 0);
-
-            if (request.IsUnique && resolveBindings.Count() > 1)
+            if (request.IsUnique)
             {
-                if (request.IsOptional)
-                {
-                    return Enumerable.Empty<object>();
-                }
+                resolveBindings = resolveBindings.OrderByDescending(b => b, bindingPrecedenceComparer).ToList();
+                var model = resolveBindings.First(); // the type (conditonal, implicit, etc) of binding we'll return
+                resolveBindings =
+                    resolveBindings.TakeWhile(binding => bindingPrecedenceComparer.Compare(binding, model) == 0);
 
-                throw new ActivationException(ExceptionFormatter.CouldNotUniquelyResolveBinding(request));
+                if (resolveBindings.Count() > 1)
+                {
+                    if (request.IsOptional)
+                    {
+                        return Enumerable.Empty<object>();
+                    }
+
+                    var formattedBindings =
+                        from binding in resolveBindings
+                        let context = this.CreateContext(request, binding)
+                        select binding.Format(context);
+                    throw new ActivationException(ExceptionFormatter.CouldNotUniquelyResolveBinding(request, formattedBindings.ToArray()));
+                }
             }
 
-            return resolveBindings.Select(binding => this.CreateContext(request, binding).Resolve());
+            if(resolveBindings.Any(binding => !binding.IsImplicit))
+            {
+                resolveBindings = resolveBindings.Where(binding => !binding.IsImplicit);
+            }
+
+            return resolveBindings
+                .Select(binding => this.CreateContext(request, binding).Resolve());
         }
 
         /// <summary>
@@ -434,17 +457,6 @@ namespace Ninject
         protected virtual Func<IBinding, bool> SatifiesRequest(IRequest request)
         {
             return binding => binding.Matches(request) && request.Matches(binding);
-        }
-
-        /// <summary>
-        /// Creates a new builder for the specified binding.
-        /// </summary>
-        /// <typeparam name="T">The type restriction to apply to the binding builder.</typeparam>
-        /// <param name="binding">The binding that will be built.</param>
-        /// <returns>The created builder.</returns>
-        protected override BindingBuilder<T> CreateBindingBuilder<T>(IBinding binding)
-        {
-            return new BindingBuilder<T>(binding, this);
         }
 
         /// <summary>
@@ -559,6 +571,7 @@ namespace Ninject
                             {
                                 b => b != null,       // null bindings should never happen, but just in case
                                 b => b.IsConditional, // conditional bindings > unconditional
+                                b => !b.Service.ContainsGenericParameters, // closed generics > open generics
                                 b => !b.IsImplicit,   // explicit bindings > implicit
                             };
 

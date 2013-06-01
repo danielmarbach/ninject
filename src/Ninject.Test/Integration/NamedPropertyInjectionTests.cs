@@ -1,11 +1,13 @@
 namespace Ninject.Tests.Integration
 {
 #if !SILVERLIGHT
+    using System;
+
+    using FluentAssertions;
     using Ninject.Tests.Fakes;
     using Xunit;
-    using Xunit.Should;
     
-    public class NamedPropertyInjectionTests
+    public class NamedPropertyInjectionTests : IDisposable
     {
         private readonly IKernel kernel;
 
@@ -18,15 +20,20 @@ namespace Ninject.Tests.Integration
             this.kernel.Bind<IWeapon>().To<Dagger>().Named("VerySecret");
         }
 
+        public void Dispose()
+        {
+            this.kernel.Dispose();
+        }
+
         [Fact]
         public void NamedAttributeOfPropertiesAreRespected()
         {
             var ninja = this.kernel.Get<OwnStyleNinja>();
 
-            ninja.MainWeapon.ShouldBeInstanceOf<Sword>();
-            ninja.OffhandWeapon.ShouldBeInstanceOf<ShortSword>();
-            ninja.SecretWeaponAccessor.ShouldBeInstanceOf<Shuriken>();
-            ninja.VerySecretWeaponAccessor.ShouldBeInstanceOf<Dagger>();
+            ninja.MainWeapon.Should().BeOfType<Sword>();
+            ninja.OffhandWeapon.Should().BeOfType<ShortSword>();
+            ninja.SecretWeaponAccessor.Should().BeOfType<Shuriken>();
+            ninja.VerySecretWeaponAccessor.Should().BeOfType<Dagger>();
         }
 
         [Fact]
@@ -34,10 +41,10 @@ namespace Ninject.Tests.Integration
         {
             var ninja = this.kernel.Get<NinjaWithSpecialMaster>();
 
-            ninja.MainWeapon.ShouldBeInstanceOf<Sword>();
-            ninja.OffhandWeapon.ShouldBeInstanceOf<ShortSword>();
-            ninja.SecretWeaponAccessor.ShouldBeInstanceOf<Shuriken>();
-            ninja.VerySecretWeaponAccessor.ShouldBeInstanceOf<Dagger>();
+            ninja.MainWeapon.Should().BeOfType<Sword>();
+            ninja.OffhandWeapon.Should().BeOfType<ShortSword>();
+            ninja.SecretWeaponAccessor.Should().BeOfType<Shuriken>();
+            ninja.VerySecretWeaponAccessor.Should().BeOfType<Dagger>();
         }
         
         public class OwnStyleNinja

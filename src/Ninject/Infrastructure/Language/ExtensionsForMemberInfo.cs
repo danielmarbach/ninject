@@ -21,6 +21,31 @@ namespace Ninject.Infrastructure.Language
     /// </summary>
     public static class ExtensionsForMemberInfo
     {
+        const BindingFlags DefaultFlags = BindingFlags.Public | BindingFlags.Instance;
+#if !NO_LCG && !SILVERLIGHT
+        const BindingFlags Flags = DefaultFlags | BindingFlags.NonPublic;
+#else
+        const BindingFlags Flags = DefaultFlags;
+#endif
+
+#if !MONO
+        private static MethodInfo parentDefinitionMethodInfo;
+
+        private static MethodInfo ParentDefinitionMethodInfo
+        {
+            get
+            {
+                if (parentDefinitionMethodInfo == null)
+                {
+                    var runtimeAssemblyInfoType = typeof(MethodInfo).Assembly.GetType("System.Reflection.RuntimeMethodInfo");
+                    parentDefinitionMethodInfo = runtimeAssemblyInfoType.GetMethod("GetParentDefinition", Flags);
+                }
+
+                return parentDefinitionMethodInfo;
+            }
+        }
+#endif
+
         /// <summary>
         /// Determines whether the specified member has attribute.
         /// </summary>
@@ -49,6 +74,16 @@ namespace Ninject.Infrastructure.Language
             {
                 return IsDefined(propertyInfo, type, true);
             }
+
+#if NETCF
+            // Workaround for the CF bug that derived generic methods throw an exception for IsDefined
+            // This means that the Inject attribute can not be defined on base methods for CF framework
+            var methodInfo = member as MethodInfo;
+            if (methodInfo != null)
+            {
+                return methodInfo.IsDefined(type, false);
+            }
+#endif
 
             return member.IsDefined(type, true);
         }
@@ -98,7 +133,7 @@ namespace Ninject.Infrastructure.Language
         /// <returns></returns>
         public static object[] GetCustomAttributesExtended(this MemberInfo member, Type attributeType, bool inherited)
         {
-#if !NET_35
+#if !NET_35 && !MONO_40
             return Attribute.GetCustomAttributes(member, attributeType, inherited);
 #else
             var propertyInfo = member as PropertyInfo;
@@ -113,13 +148,6 @@ namespace Ninject.Infrastructure.Language
 
         private static PropertyInfo GetParentDefinition(PropertyInfo property)
         {
-            const BindingFlags DefaultFlags = BindingFlags.Public | BindingFlags.Instance;
-#if !NO_LCG && !SILVERLIGHT
-            const BindingFlags Flags = DefaultFlags | BindingFlags.NonPublic;
-#else
-            const BindingFlags Flags = DefaultFlags;
-#endif
-
             var propertyMethod = property.GetGetMethod(true) ?? property.GetSetMethod(true);
             if (propertyMethod != null)
             {
@@ -135,14 +163,25 @@ namespace Ninject.Infrastructure.Language
 
         private static MethodInfo GetParentDefinition(this MethodInfo method, BindingFlags flags)
         {
-            var runtimeAssemblyInfoType = typeof(MethodInfo).Assembly.GetType("System.Reflection.RuntimeMethodInfo");
-            var getParentDefinitionMethodInfo = runtimeAssemblyInfoType.GetMethod("GetParentDefinition", flags);
-            if (getParentDefinitionMethodInfo == null)
+#if MEDIUM_TRUST || MONO
+            var baseDefinition = method.GetBaseDefinition(); 
+            var type = method.DeclaringType.BaseType;
+            MethodInfo result = null;
+            while (result == null && type != null)
+            {
+                result = type.GetMethods(flags).Where(m => m.GetBaseDefinition().Equals(baseDefinition)).SingleOrDefault();
+                type = type.BaseType;
+            }
+
+            return result;
+#else
+            if (ParentDefinitionMethodInfo == null)
             {
                 return null;
             }
 
-            return (MethodInfo)getParentDefinitionMethodInfo.Invoke(method, flags, null, null, CultureInfo.InvariantCulture);
+            return (MethodInfo)ParentDefinitionMethodInfo.Invoke(method, flags, null, null, CultureInfo.InvariantCulture);
+#endif
         }
 
         private static bool IsDefined(PropertyInfo element, Type attributeType, bool inherit)

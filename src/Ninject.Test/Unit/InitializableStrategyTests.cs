@@ -1,12 +1,13 @@
-﻿using System;
+﻿#if !NO_MOQ
 using Moq;
 using Ninject.Activation;
 using Ninject.Activation.Strategies;
 using Xunit;
-using Xunit.Should;
 
 namespace Ninject.Tests.Unit.InitializableStrategyTests
 {
+    using FluentAssertions;
+
     public class InitializableStrategyContext
     {
         protected readonly InitializableStrategy strategy;
@@ -28,7 +29,7 @@ namespace Ninject.Tests.Unit.InitializableStrategyTests
             var reference = new InstanceReference { Instance = instance };
 
             strategy.Activate(contextMock.Object, reference);
-            instance.WasInitialized.ShouldBeTrue();
+            instance.WasInitialized.Should().BeTrue();
         }
 
         [Fact]
@@ -51,3 +52,4 @@ namespace Ninject.Tests.Unit.InitializableStrategyTests
         }
     }
 }
+#endif

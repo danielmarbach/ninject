@@ -1,39 +1,26 @@
 ﻿namespace Ninject.Tests.Integration.ManualReleaseTests
 {
+    using System;
+
+    using FluentAssertions;
     using Ninject.Tests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
     
-    public class ManualReleaseContext
+    public class ManualReleaseContext : IDisposable
     {
         protected StandardKernel kernel;
 
         public ManualReleaseContext()
         {
-            this.SetUp();
+            this.kernel = new StandardKernel();            
         }
 
-        [TestInitialize]
-        public void SetUp()
+        public void Dispose()
         {
-            this.kernel = new StandardKernel();            
+            this.kernel.Dispose();
         }
     }
 
-    [TestClass]
     public class WhenReleaseIsCalled : ManualReleaseContext
     {
         [Fact]
@@ -44,7 +31,7 @@
             var instance = kernel.Get<NotifiesWhenDisposed>();
             kernel.Release(instance);
 
-            instance.IsDisposed.ShouldBeTrue();
+            instance.IsDisposed.Should().BeTrue();
         }
 
         [Fact]
@@ -54,13 +41,13 @@
 
             var instance1 = kernel.Get<NotifiesWhenDisposed>();
             var instance2 = kernel.Get<NotifiesWhenDisposed>();
-            instance1.ShouldBeSameAs(instance2);
+            instance1.Should().BeSameAs(instance2);
 
             kernel.Release(instance1);
 
             var instance3 = kernel.Get<NotifiesWhenDisposed>();
-            instance3.ShouldNotBeSameAs(instance1);
-            instance3.ShouldNotBeSameAs(instance2);
+            instance3.Should().NotBeSameAs(instance1);
+            instance3.Should().NotBeSameAs(instance2);
         }
     }
 }

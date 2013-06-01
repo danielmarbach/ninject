@@ -2,44 +2,27 @@
 {
     using System;
     using System.Threading;
+    using FluentAssertions;
     using Ninject.Activation.Caching;
     using Ninject.Tests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Assert = AssertWithThrows;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Assert = AssertWithThrows;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
-    public class ThreadScopeContext
+    public class ThreadScopeContext : IDisposable
     {
         protected StandardKernel kernel;
 
         public ThreadScopeContext()
         {
-            this.SetUp();
-        }
-
-        [TestInitialize]
-        public void SetUp()
-        {
             var settings = new NinjectSettings { CachePruningInterval = TimeSpan.MaxValue };
             this.kernel = new StandardKernel(settings);
         }
+
+        public void Dispose()
+        {
+            this.kernel.Dispose();
+        }
     }
 
-    [TestClass]
     public class WhenServiceIsBoundWithThreadScope : ThreadScopeContext
     {
         [Fact]
@@ -61,9 +44,9 @@
             thread.Start();
             thread.Join();
 
-            weapon1.ShouldNotBeNull();
-            weapon2.ShouldNotBeNull();
-            weapon1.ShouldBeSameAs(weapon2);
+            weapon1.Should().NotBeNull();
+            weapon2.Should().NotBeNull();
+            weapon1.Should().BeSameAs(weapon2);
         }
 
         [Fact]
@@ -81,11 +64,12 @@
             thread.Start();
             thread.Join();
 
-            weapon1.ShouldNotBeNull();
-            weapon2.ShouldNotBeNull();
-            weapon1.ShouldNotBeSameAs(weapon2);
+            weapon1.Should().NotBeNull();
+            weapon2.Should().NotBeNull();
+            weapon1.Should().NotBeSameAs(weapon2);
         }
 
+#if !MONO
         [Fact]
         public void InstancesActivatedWithinScopeAreDeactivatedAfterThreadIsGarbageCollectedAndCacheIsPruned()
         {
@@ -108,8 +92,9 @@
 
             cache.Prune();
 
-            instance.ShouldNotBeNull();
-            instance.IsDisposed.ShouldBeTrue();
+            instance.Should().NotBeNull();
+            instance.IsDisposed.Should().BeTrue();
         }
+#endif
     }
 }

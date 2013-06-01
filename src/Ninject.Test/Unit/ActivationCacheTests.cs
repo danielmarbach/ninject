@@ -1,36 +1,17 @@
+#if !NO_MOQ
 namespace Ninject.Tests.Unit
 {
     using System;
+    using FluentAssertions;
     using Moq;
     using Ninject.Activation.Caching;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
-    [TestClass]
     public class ActivationCacheTests
     {
-        private ActivationCache testee;
+        private readonly ActivationCache testee;
 
         public ActivationCacheTests()
-        {
-            this.SetUp();
-        }
-
-        [TestInitialize]
-        public void SetUp()
         {
             this.testee = new ActivationCache(new Mock<ICachePruner>().Object);
         }
@@ -40,20 +21,20 @@ namespace Ninject.Tests.Unit
         {
             var activated = this.testee.IsActivated(new object());
 
-            activated.ShouldBeFalse();
+            activated.Should().BeFalse();
         }
 
         [Fact]
         public void IsActivatedReturnsTrueForObjectsInTheActivationCache()
         {
-            var instance = new object();
+            var instance = new TestObject(42);
 
             this.testee.AddActivatedInstance(instance);
             var activated = this.testee.IsActivated(instance);
             var activatedObjectCount = this.testee.ActivatedObjectCount;
 
-            activated.ShouldBeTrue();
-            activatedObjectCount.ShouldBe(1);
+            activated.Should().BeTrue();
+            activatedObjectCount.Should().Be(1);
         }
 
         [Fact]
@@ -61,34 +42,48 @@ namespace Ninject.Tests.Unit
         {
             var activated = this.testee.IsDeactivated(new object());
 
-            activated.ShouldBeFalse();
+            activated.Should().BeFalse();
         }
 
         [Fact]
         public void IsDeactivatedReturnsTrueForObjectsInTheDeactivationCache()
         {
-            var instance = new object();
+            var instance = new TestObject(42);
 
             this.testee.AddDeactivatedInstance(instance);
             var deactivated = this.testee.IsDeactivated(instance);
             var deactivatedObjectCount = this.testee.DeactivatedObjectCount;
 
-            deactivated.ShouldBeTrue();
-            deactivatedObjectCount.ShouldBe(1);
+            deactivated.Should().BeTrue();
+            deactivatedObjectCount.Should().Be(1);
         }
-        
+
         [Fact]
         public void DeadObjectsAreRemoved()
         {
-            this.testee.AddActivatedInstance(new object());
-            this.testee.AddDeactivatedInstance(new object());
+            this.testee.AddActivatedInstance(new TestObject(42));
+            this.testee.AddDeactivatedInstance(new TestObject(42));
+            GC.Collect();
             GC.Collect();
             this.testee.Prune();
             var activatedObjectCount = this.testee.ActivatedObjectCount;
             var deactivatedObjectCount = this.testee.DeactivatedObjectCount;
 
-            activatedObjectCount.ShouldBe(0);
-            deactivatedObjectCount.ShouldBe(0);
+            activatedObjectCount.Should().Be(0);
+            deactivatedObjectCount.Should().Be(0);
+        }
+
+        [Fact]
+        public void ImplementationDoesNotRelyOnObjectHashCode()
+        {
+            var instance = new TestObject(42);
+
+            this.testee.AddActivatedInstance(instance);
+            instance.ChangeHashCode(43);
+            var isActivated = this.testee.IsActivated(instance);
+
+            isActivated.Should().BeTrue();
         }
     }
 }
+#endif

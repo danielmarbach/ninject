@@ -1,44 +1,29 @@
 ﻿namespace Ninject.Tests.Integration.StandardKernelTests
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
+    using FluentAssertions;
 
+    using Ninject.Parameters;
     using Ninject.Tests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using MsTest.Should;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Assert = AssertWithThrows;
-    using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
-#else
-    using UnitDriven;
-    using UnitDriven.Should;
-    using Assert = AssertWithThrows;
-    using Fact = UnitDriven.TestMethodAttribute;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
     using Xunit;
-    using Xunit.Should;
-#endif
 
-    public class StandardKernelContext
+    public class StandardKernelContext : IDisposable
     {
         protected StandardKernel kernel;
 
         public StandardKernelContext()
         {
-            this.SetUp();
+            this.kernel = new StandardKernel();
         }
 
-        [TestInitialize]
-        public void SetUp()
+        public void Dispose()
         {
-            this.kernel = new StandardKernel();
+            this.kernel.Dispose();
         }
     }
 
-    [TestClass]
     public class WhenGetIsCalledForInterfaceBoundService : StandardKernelContext
     {
         [Fact]
@@ -48,8 +33,8 @@
 
             var weapon = kernel.Get<IWeapon>();
 
-            weapon.ShouldNotBeNull();
-            weapon.ShouldBeInstanceOf<Sword>();
+            weapon.Should().NotBeNull();
+            weapon.Should().BeOfType<Sword>();
         }
 
         [Fact]
@@ -60,7 +45,9 @@
 
             var exception = Assert.Throws<ActivationException>(() => kernel.Get<IWeapon>());
             
-            exception.Message.ShouldContain("More than one matching bindings are available.");
+            exception.Message.Should().Contain("More than one matching bindings are available.");
+            exception.Message.Should().Contain("1) binding from IWeapon to Sword");
+            exception.Message.Should().Contain("2) binding from IWeapon to Shuriken");
         }
 
         [Fact]
@@ -71,14 +58,13 @@
 
             var warrior = kernel.Get<IWarrior>();
 
-            warrior.ShouldNotBeNull();
-            warrior.ShouldBeInstanceOf<Samurai>();
-            warrior.Weapon.ShouldNotBeNull();
-            warrior.Weapon.ShouldBeInstanceOf<Sword>();
+            warrior.Should().NotBeNull();
+            warrior.Should().BeOfType<Samurai>();
+            warrior.Weapon.Should().NotBeNull();
+            warrior.Weapon.Should().BeOfType<Sword>();
         }
     }
 
-    [TestClass]
     public class WhenGetIsCalledForSelfBoundService : StandardKernelContext
     {
         [Fact]
@@ -88,8 +74,8 @@
 
             var weapon = kernel.Get<Sword>();
 
-            weapon.ShouldNotBeNull();
-            weapon.ShouldBeInstanceOf<Sword>();
+            weapon.Should().NotBeNull();
+            weapon.Should().BeOfType<Sword>();
         }
 
         [Fact]
@@ -100,13 +86,12 @@
 
             var samurai = kernel.Get<Samurai>();
 
-            samurai.ShouldNotBeNull();
-            samurai.Weapon.ShouldNotBeNull();
-            samurai.Weapon.ShouldBeInstanceOf<Sword>();
+            samurai.Should().NotBeNull();
+            samurai.Weapon.Should().NotBeNull();
+            samurai.Weapon.Should().BeOfType<Sword>();
         }
     }
 
-    [TestClass]
     public class WhenGetIsCalledForUnboundService : StandardKernelContext
     {
         [Fact]
@@ -114,8 +99,8 @@
         {
             var weapon = kernel.Get<Sword>();
 
-            weapon.ShouldNotBeNull();
-            weapon.ShouldBeInstanceOf<Sword>();
+            weapon.Should().NotBeNull();
+            weapon.Should().BeOfType<Sword>();
         }
 
         [Fact]
@@ -123,8 +108,8 @@
         {
             var service = kernel.Get<GenericService<int>>();
 
-            service.ShouldNotBeNull();
-            service.ShouldBeInstanceOf<GenericService<int>>();
+            service.Should().NotBeNull();
+            service.Should().BeOfType<GenericService<int>>();
         }
 
         [Fact]
@@ -158,7 +143,6 @@
         }
     }
 
-    [TestClass]
     public class WhenGetIsCalledForGenericServiceRegisteredViaOpenGenericType : StandardKernelContext
     {
         [Fact]
@@ -168,12 +152,11 @@
 
             var service = kernel.Get<IGeneric<int>>();
 
-            service.ShouldNotBeNull();
-            service.ShouldBeInstanceOf<GenericService<int>>();
+            service.Should().NotBeNull();
+            service.Should().BeOfType<GenericService<int>>();
         }
     }
 
-    [TestClass]
     public class WhenTryGetIsCalledForInterfaceBoundService : StandardKernelContext
     {
         [Fact]
@@ -183,8 +166,8 @@
 
             var weapon = kernel.TryGet<IWeapon>();
 
-            weapon.ShouldNotBeNull();
-            weapon.ShouldBeInstanceOf<Sword>();
+            weapon.Should().NotBeNull();
+            weapon.Should().BeOfType<Sword>();
         }
 
         [Fact]
@@ -195,11 +178,10 @@
 
             var weapon = kernel.TryGet<IWeapon>();
 
-            weapon.ShouldBeNull();
+            weapon.Should().BeNull();
         }
     }
 
-    [TestClass]
     public class WhenTryGetIsCalledForUnboundService : StandardKernelContext
     {
         [Fact]
@@ -207,15 +189,15 @@
         {
             var weapon = kernel.TryGet<Sword>();
 
-            weapon.ShouldNotBeNull();
-            weapon.ShouldBeInstanceOf<Sword>();
+            weapon.Should().NotBeNull();
+            weapon.Should().BeOfType<Sword>();
         }
 
         [Fact]
         public void ReturnsNullIfTypeIsNotSelfBindable()
         {
             var weapon = kernel.TryGet<IWeapon>();
-            weapon.ShouldBeNull();
+            weapon.Should().BeNull();
         }
 
         [Fact]
@@ -224,7 +206,7 @@
             this.kernel.Bind<IWeapon>().To<Sword>().When(ctx => false);
 
             var weapon = kernel.TryGet<IWeapon>();
-            weapon.ShouldBeNull();
+            weapon.Should().BeNull();
         }
 
         [Fact]
@@ -233,7 +215,7 @@
             this.kernel.Bind<IWarrior>().To<Samurai>();
 
             var warrior = kernel.TryGet<IWarrior>();
-            warrior.ShouldBeNull();
+            warrior.Should().BeNull();
         }
 
         [Fact]
@@ -244,7 +226,7 @@
             kernel.Bind<IWeapon>().To<Shuriken>();
 
             var warrior = kernel.TryGet<IWarrior>();
-            warrior.ShouldBeNull();
+            warrior.Should().BeNull();
         }
 
         [Fact]
@@ -254,11 +236,10 @@
             kernel.Bind<IWeapon>().To<Sword>().When(ctx => false);
 
             var warrior = kernel.TryGet<IWarrior>();
-            warrior.ShouldBeNull();
+            warrior.Should().BeNull();
         }
     }
 
-    [TestClass]
     public class WhenGetAllIsCalledForInterfaceBoundService : StandardKernelContext
     {
         [Fact]
@@ -269,32 +250,33 @@
 
             var weapons = kernel.GetAll<IWeapon>().ToArray();
 
-            weapons.ShouldNotBeNull();
-            weapons.Length.ShouldBe(2);
-            weapons[0].ShouldBeInstanceOf<Sword>();
-            weapons[1].ShouldBeInstanceOf<Shuriken>();
+            weapons.Should().NotBeNull();
+            weapons.Length.Should().Be(2);
+            weapons[0].Should().BeOfType<Sword>();
+            weapons[1].Should().BeOfType<Shuriken>();
         }
 
         [Fact]
         public void DoesNotActivateItemsUntilTheEnumeratorRunsOverThem()
         {
+            InitializableA.Count = 0;
+            InitializableB.Count = 0;
             kernel.Bind<IInitializable>().To<InitializableA>();
             kernel.Bind<IInitializable>().To<InitializableB>();
 
             IEnumerable<IInitializable> instances = kernel.GetAll<IInitializable>();
             IEnumerator<IInitializable> enumerator = instances.GetEnumerator();
 
-            InitializableA.Count.ShouldBe(0);
+            InitializableA.Count.Should().Be(0);
             enumerator.MoveNext();
-            InitializableA.Count.ShouldBe(1);
-            InitializableB.Count.ShouldBe(0);
+            InitializableA.Count.Should().Be(1);
+            InitializableB.Count.Should().Be(0);
             enumerator.MoveNext();
-            InitializableA.Count.ShouldBe(1);
-            InitializableB.Count.ShouldBe(1);
+            InitializableA.Count.Should().Be(1);
+            InitializableB.Count.Should().Be(1);
         }
     }
 
-    [TestClass]
     public class WhenGetAllIsCalledForGenericServiceRegisteredViaOpenGenericType : StandardKernelContext
     {
         [Fact]
@@ -305,14 +287,47 @@
 
             var services = kernel.GetAll<IGeneric<int>>().ToArray();
 
-            services.ShouldNotBeNull();
-            services.Length.ShouldBe(2);
-            services[0].ShouldBeInstanceOf<GenericService<int>>();
-            services[1].ShouldBeInstanceOf<GenericService2<int>>();
+            services.Should().NotBeNull();
+            services.Length.Should().Be(2);
+            services[0].Should().BeOfType<GenericService<int>>();
+            services[1].Should().BeOfType<GenericService2<int>>();
         }
+
+        [Fact]
+        public void OpenGenericBindingsCanBeOverridenByClosedGenericBindings()
+        {
+            kernel.Bind(typeof(IGeneric<>)).To(typeof(GenericService<>));
+            kernel.Bind<IGeneric<int>>().To<ClosedGenericService>();
+
+            var service = kernel.Get<IGeneric<int>>();
+
+            service.Should().BeOfType<ClosedGenericService>();
+
+        }
+
+#if NET_40
+        [Fact]
+        public void OpenGenericsWithCoAndContraVarianceCanBeResolved()
+        {
+            kernel.Bind(typeof(IGenericCoContraVarianceService<,>)).To(typeof(OpenGenericCoContraVarianceService<,>));
+
+            var service = kernel.Get<IGenericCoContraVarianceService<string, int>>();
+
+            service.Should().BeOfType<OpenGenericCoContraVarianceService<string, int>>();
+        }
+    
+        [Fact]
+        public void ClosedGenericsWithCoAndContraVarianceCanBeResolved()
+        {
+            kernel.Bind(typeof(IGenericCoContraVarianceService<string, int>)).To(typeof(ClosedGenericCoContraVarianceService));
+
+            var service = kernel.Get<IGenericCoContraVarianceService<string, int>>();
+
+            service.Should().BeOfType<ClosedGenericCoContraVarianceService>();
+        }
+#endif
     }
 
-    [TestClass]
     public class WhenGetAllIsCalledForUnboundService : StandardKernelContext
     {
         [Fact]
@@ -320,9 +335,9 @@
         {
             var weapons = kernel.GetAll<Sword>().ToArray();
 
-            weapons.ShouldNotBeNull();
-            weapons.Length.ShouldBe(1);
-            weapons[0].ShouldBeInstanceOf<Sword>();
+            weapons.Should().NotBeNull();
+            weapons.Length.Should().Be(1);
+            weapons[0].Should().BeOfType<Sword>();
         }
 
         [Fact]
@@ -330,12 +345,11 @@
         {
             var weapons = kernel.GetAll<IWeapon>().ToArray();
 
-            weapons.ShouldNotBeNull();
-            weapons.Length.ShouldBe(0);
+            weapons.Should().NotBeNull();
+            weapons.Length.Should().Be(0);
         }
     }
 
-    [TestClass]
     public class WhenGetIsCalledForProviderBoundService : StandardKernelContext
     {
         [Fact]
@@ -354,11 +368,10 @@
 
             var weapon = kernel.Get<IWeapon>();
 
-            weapon.ShouldBeNull();
+            weapon.Should().BeNull();
         }
     }
 
-    [TestClass]
     public class WhenGetIsCalledWithConstraints : StandardKernelContext
     {
         [Fact]
@@ -369,8 +382,8 @@
 
             var weapon = kernel.Get<IWeapon>("sword");
 
-            weapon.ShouldNotBeNull();
-            weapon.ShouldBeInstanceOf<Sword>();
+            weapon.Should().NotBeNull();
+            weapon.Should().BeOfType<Sword>();
         }
 
         [Fact]
@@ -381,12 +394,11 @@
 
             var weapon = kernel.Get<IWeapon>(x => x.Get<string>("type") == "melee");
 
-            weapon.ShouldNotBeNull();
-            weapon.ShouldBeInstanceOf<Sword>();
+            weapon.Should().NotBeNull();
+            weapon.Should().BeOfType<Sword>();
         }
     }
 
-    [TestClass]
     public class WhenUnbindIsCalled : StandardKernelContext
     {
         [Fact]
@@ -396,15 +408,14 @@
             kernel.Bind<IWeapon>().To<Sword>();
 
             var bindings = kernel.GetBindings(typeof(IWeapon)).ToArray();
-            bindings.Length.ShouldBe(2);
+            bindings.Length.Should().Be(2);
 
             kernel.Unbind<IWeapon>();
             bindings = kernel.GetBindings(typeof(IWeapon)).ToArray();
-            bindings.ShouldBeEmpty();
+            bindings.Should().BeEmpty();
         }
     }
 
-    [TestClass]
     public class WhenRebindIsCalled : StandardKernelContext
     {
         [Fact]
@@ -414,14 +425,48 @@
             kernel.Bind<IWeapon>().To<Sword>();
 
             var bindings = kernel.GetBindings(typeof(IWeapon)).ToArray();
-            bindings.Length.ShouldBe(2);
+            bindings.Length.Should().Be(2);
 
             kernel.Rebind<IWeapon>().To<Sword>();
             bindings = kernel.GetBindings(typeof(IWeapon)).ToArray();
-            bindings.Length.ShouldBe(1);
+            bindings.Length.Should().Be(1);
+        }
+    }
+     
+    public class WhenCanResolveIsCalled : StandardKernelContext
+    {
+        [Fact]
+        public void ForImplicitBindings()
+        {
+            this.kernel.Get<Sword>();
+            var request = this.kernel.CreateRequest(typeof(Sword), null, Enumerable.Empty<IParameter>(), false, true);
+
+            this.kernel.CanResolve(request, true).Should().BeFalse();
+            this.kernel.CanResolve(request, false).Should().BeTrue();
+            this.kernel.CanResolve(request).Should().BeTrue();
         }
     }
 
+#if !SILVERLIGHT
+    public class WhenDerivedClassWithPrivateGetterIsResolved
+    {
+        [Fact]
+        public void ItCanBeResolved()
+        {
+            using (var kernel = new StandardKernel(
+                new NinjectSettings
+                {
+                    UseReflectionBasedInjection = true,
+                    InjectNonPublic = true,
+                    InjectParentPrivateProperties = true
+                }))
+            {
+                kernel.Get<DerivedClassWithPrivateGetter>();   
+            }
+        }
+    }
+#endif
+    
     public class InitializableA : IInitializable
     {
         public static int Count = 0;
@@ -442,12 +487,28 @@
         }
     }
 
+    public class ClassWithPrivateGetter
+    {
+        float Value
+        {
+            get { return 0f; }
+        }
+    }
+
+    public class DerivedClassWithPrivateGetter : ClassWithPrivateGetter { }
     public interface IGeneric<T> { }
     public class GenericService<T> : IGeneric<T> { }
     public class GenericService2<T> : IGeneric<T> { }
+    public class ClosedGenericService : IGeneric<int> { }
     public interface IGenericWithConstraints<T> where T : class { }
     public class GenericServiceWithConstraints<T> : IGenericWithConstraints<T> where T : class { }
-    
+#if NET_40
+    public interface IGenericCoContraVarianceService<in T, out TK> {}
+    public class ClosedGenericCoContraVarianceService : IGenericCoContraVarianceService<string, int> { }
+    public class OpenGenericCoContraVarianceService<T, TK> : IGenericCoContraVarianceService<T, TK> { }
+#endif
+
+
     public class NullProvider : Ninject.Activation.Provider<Sword>
     {
         protected override Sword CreateInstance (Activation.IContext context)

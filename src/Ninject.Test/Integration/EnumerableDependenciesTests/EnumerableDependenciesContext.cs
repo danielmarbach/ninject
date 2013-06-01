@@ -1,30 +1,22 @@
 ﻿namespace Ninject.Tests.Integration.EnumerableDependenciesTests
 {
-    using Ninject.Tests.Integration.EnumerableDependenciesTests.Fakes;
-#if SILVERLIGHT
-#if SILVERLIGHT_MSTEST
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-#else
-    using UnitDriven;
-#endif
-#else
-    using Ninject.Tests.MSTestAttributes;
-#endif
+    using System;
 
-    public abstract class EnumerableDependenciesContext
+    using Ninject.Tests.Integration.EnumerableDependenciesTests.Fakes;
+
+    public abstract class EnumerableDependenciesContext : IDisposable
     {
         protected EnumerableDependenciesContext()
         {
-            this.SetUp();
+            this.Kernel = new StandardKernel();
+        }
+
+        public void Dispose()
+        {
+            this.Kernel.Dispose();
         }
 
         protected StandardKernel Kernel { get; private set; }
-
-        [TestInitialize]
-        public void SetUp()
-        {
-            this.Kernel = new StandardKernel();
-        }
 
         protected abstract void VerifyInjection(IParent parent);
     }
